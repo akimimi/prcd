@@ -1,0 +1,13 @@
+dev-backend:
+  environment: debug
+  vcs_project: mimixiche-backend
+  branch: develop
+  jenkins_project: "dev-jenkins-project"
+  jenkins_token: "abcdefg1234"
+
+dev-backend-php7:
+  environment: debug
+  vcs_project: mimixiche-backend
+  branch: develop7
+  jenkins_project: "dev-jenkins-project-php7"
+  jenkins_token: "abcdefg1234"

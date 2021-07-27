@@ -33,9 +33,8 @@ func (notifier *JenkinsNotifier) Notify() error {
 		defer resp.Body.Close()
 		logs.Info("Notified to project ", notifier.JenkinsProject.Name)
 		return nil
-	} else {
-		return err
 	}
+	return err
 }
 
 func (notifier *JenkinsNotifier) notifyUrl() string {

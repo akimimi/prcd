@@ -154,9 +154,8 @@ func (agent *DefaultHookAgent) Environment() string {
 func hookBranchEnvironment(branch string) string {
 	if strings.HasPrefix(branch, "master") || strings.HasPrefix(branch, "release") {
 		return "production"
-	} else {
-		return "debug"
 	}
+	return "debug"
 }
 
 func createHookAgentByName(name string) HookAgent {

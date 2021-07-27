@@ -1,4 +1,4 @@
-module prcd
+module github.com/akimimi/prcd
 
 go 1.16
 

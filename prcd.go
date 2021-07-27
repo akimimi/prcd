@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+// Error codes for where the working flow stops.
 const (
 	ErrorInParsing = 1001
 	ErrorInGetData = 1002
@@ -105,7 +106,7 @@ func onNotify(c *gin.Context) {
 		errorMessage = e.Error()
 		logs.Error(e)
 	}
-	c.JSON(200, gin.H{"errcode": errorCode, "errmsg": errorMessage,})
+	c.JSON(200, gin.H{"errcode": errorCode, "errmsg": errorMessage})
 }
 
 func sendNotice(basicHook BasicHook, bytes []byte) {

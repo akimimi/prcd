@@ -2,11 +2,13 @@ package main
 
 import config_loader "github.com/akimimi/config-loader"
 
+// JenkinsProject defines a structure for jenkins project.
 type JenkinsProject struct {
 	Name  string
 	Token string
 }
 
+// JenkinsProjectConfig defines the structure for jenkins configure.
 type JenkinsProjectConfig struct {
 	Environment    string `json:"environment" yaml:"environment"`
 	VcsProject     string `json:"vcs_project" yaml:"vcs_project"`

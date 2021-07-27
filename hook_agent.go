@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// HookAgent defines a webhook agent interface. Struct of a webhook agent should satisfies the following interface.
 type HookAgent interface {
 	Name() string
 	Parse(b []byte) error
@@ -15,15 +16,18 @@ type HookAgent interface {
 	Environment() string
 }
 
+// PullRequestHookAgent is the agent for pull request transfer.
 type PullRequestHookAgent struct {
 	prHook   PullRequestHook
 	isParsed bool
 }
 
+// Name is the agent name implementation.
 func (agent *PullRequestHookAgent) Name() string {
 	return "PullRequestHookAgent"
 }
 
+// Parse unmarshal given bytes to agent.
 func (agent *PullRequestHookAgent) Parse(b []byte) error {
 	var e error
 	agent.isParsed = false
@@ -35,10 +39,13 @@ func (agent *PullRequestHookAgent) Parse(b []byte) error {
 	return e
 }
 
+// CanTriggerEvent determines whether an agent can trigger following events.
+// The pull request webhook can trigger CD events only if the state is "merged".
 func (agent *PullRequestHookAgent) CanTriggerEvent() bool {
 	return agent.prHook.PullRequest.State == "merged"
 }
 
+// HookBranch returns the branch name of a pull request.
 func (agent *PullRequestHookAgent) HookBranch() string {
 	if !agent.isParsed {
 		return ""
@@ -46,6 +53,7 @@ func (agent *PullRequestHookAgent) HookBranch() string {
 	return agent.prHook.PullRequest.Base.Ref
 }
 
+// HookProject returns the project name of a pull request.
 func (agent *PullRequestHookAgent) HookProject() string {
 	if !agent.isParsed {
 		return ""
@@ -53,19 +61,23 @@ func (agent *PullRequestHookAgent) HookProject() string {
 	return agent.prHook.PullRequest.Base.Repo.Name
 }
 
+// Environment returns "debug" or "production" based on the branch and project.
 func (agent *PullRequestHookAgent) Environment() string {
 	return hookBranchEnvironment(agent.HookBranch())
 }
 
+// PushTagHookAgent is the agent for pull request transfer.
 type PushTagHookAgent struct {
 	pushHook PushTagHook
 	isParsed bool
 }
 
+// Name is the agent name implementation.
 func (agent *PushTagHookAgent) Name() string {
 	return "PushTagHookAgent"
 }
 
+// Parse unmarshal given bytes to agent.
 func (agent *PushTagHookAgent) Parse(b []byte) error {
 	var e error
 	agent.isParsed = false
@@ -76,10 +88,13 @@ func (agent *PushTagHookAgent) Parse(b []byte) error {
 	return e
 }
 
+// CanTriggerEvent determines whether an agent can trigger following events.
+// The push tag hook cannot trigger any events.
 func (agent *PushTagHookAgent) CanTriggerEvent() bool {
 	return false
 }
 
+// HookBranch returns the branch name of a push or the tag name.
 func (agent *PushTagHookAgent) HookBranch() string {
 	if !agent.isParsed {
 		return ""
@@ -87,6 +102,7 @@ func (agent *PushTagHookAgent) HookBranch() string {
 	return agent.pushHook.Ref
 }
 
+// HookProject returns the project name of a push or tag.
 func (agent *PushTagHookAgent) HookProject() string {
 	if !agent.isParsed {
 		return ""
@@ -94,34 +110,43 @@ func (agent *PushTagHookAgent) HookProject() string {
 	return agent.pushHook.Project.Name
 }
 
+// Environment returns "debug" or "production" based on the branch and project.
 func (agent *PushTagHookAgent) Environment() string {
 	return hookBranchEnvironment(agent.HookBranch())
 }
 
+// DefaultHookAgent is a fake agent struct, a default agent cannot trigger any following events.
 type DefaultHookAgent struct {
 	isParsed bool
 }
 
+// Name is the agent name implementation.
 func (agent *DefaultHookAgent) Name() string {
 	return "DefaultHookAgent"
 }
 
-func (agent *DefaultHookAgent) Parse(b []byte) error {
+// Parse unmarshal given bytes to agent.
+func (agent *DefaultHookAgent) Parse(_ []byte) error {
 	return nil
 }
 
+// CanTriggerEvent determines whether an agent can trigger following events.
+// The default agent cannot trigger any events.
 func (agent *DefaultHookAgent) CanTriggerEvent() bool {
 	return false
 }
 
+// HookBranch always returns "unknown" for a default agent.
 func (agent *DefaultHookAgent) HookBranch() string {
 	return "unknown"
 }
 
+// HookProject always returns "unknown" for a default agent.
 func (agent *DefaultHookAgent) HookProject() string {
 	return "unknown"
 }
 
+// Environment always returns "unknown" for a default agent.
 func (agent *DefaultHookAgent) Environment() string {
 	return "unknown"
 }

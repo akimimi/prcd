@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// JenkinsNotifier defines a notify struct which contains CD host, url, project and user information.
 type JenkinsNotifier struct {
 	JenkinsHost    string
 	JenkinsUrl     string
@@ -15,6 +16,7 @@ type JenkinsNotifier struct {
 	UserApiToken   string
 }
 
+// Notify executes notify based on CD information in the struct.
 func (notifier *JenkinsNotifier) Notify() error {
 	if notifier.JenkinsProject.Name == "" || notifier.JenkinsProject.Token == "" {
 		return errors.New("Jenkins Project config is not correct.")

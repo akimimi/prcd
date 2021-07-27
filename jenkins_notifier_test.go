@@ -4,14 +4,14 @@ import "testing"
 
 func TestJenkinsNotifier_NotifyUrl(t *testing.T) {
 	notifier := JenkinsNotifier{
-		JenkinsHost:    "http://notify.website.com",
-		JenkinsUrl:     "/<project>/notify?token=<token>",
+		JenkinsHost: "http://notify.website.com",
+		JenkinsUrl:  "/<project>/notify?token=<token>",
 		JenkinsProject: JenkinsProject{
-			Name: "pro",
+			Name:  "pro",
 			Token: "abcd1234",
 		},
-		UserName:       "",
-		UserApiToken:   "",
+		UserName:     "",
+		UserApiToken: "",
 	}
 	expected := "http://notify.website.com/pro/notify?token=abcd1234"
 	if notifier.notifyUrl() != expected {
@@ -33,7 +33,7 @@ func TestJenkinsNotifier_Notify(t *testing.T) {
 
 	notifier.JenkinsHost = "http://notify.website.com"
 	notifier.JenkinsProject = JenkinsProject{
-		Name: "pro",
+		Name:  "pro",
 		Token: "abcd1234",
 	}
 	if err := notifier.Notify(); err == nil {

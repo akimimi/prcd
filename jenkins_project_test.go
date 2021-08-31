@@ -26,6 +26,13 @@ func TestJenkinsProjectConfigParsing(t *testing.T) {
 		jenkinsProjectConfigGrp["dev-backend-php7"].JenkinsToken != "abcdefg1234" {
 		t.Error("Jenkins config dev-backend parse failed!")
 	}
+	if jenkinsProjectConfigGrp["release-backend"].Environment != "production" ||
+		jenkinsProjectConfigGrp["release-backend"].VcsProject != "mimixiche-backend" ||
+		jenkinsProjectConfigGrp["release-backend"].Branch != "release" ||
+		jenkinsProjectConfigGrp["release-backend"].JenkinsProject != "production-backend-release" ||
+		jenkinsProjectConfigGrp["release-backend"].JenkinsToken != "abcdefg1234" {
+		t.Error("Jenkins config dev-backend parse failed!")
+	}
 }
 
 func TestMatchJenkinsProject(t *testing.T) {
@@ -40,6 +47,13 @@ func TestMatchJenkinsProject(t *testing.T) {
 	env, project, branch = "debug", "mimixiche-backend", "develop7"
 	jenkinsProject = matchJenkinsProject(env, project, branch)
 	expected = "dev-jenkins-project-php7"
+	if jenkinsProject.Name != expected {
+		t.Errorf("Jenkins project error, expected %s, actual %s.", expected, jenkinsProject.Name)
+	}
+
+	env, project, branch = "production", "mimixiche-backend", "release"
+	jenkinsProject = matchJenkinsProject(env, project, branch)
+	expected = "production-backend-release"
 	if jenkinsProject.Name != expected {
 		t.Errorf("Jenkins project error, expected %s, actual %s.", expected, jenkinsProject.Name)
 	}

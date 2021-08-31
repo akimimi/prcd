@@ -11,3 +11,10 @@ dev-backend-php7:
   branch: develop7
   jenkins_project: "dev-jenkins-project-php7"
   jenkins_token: "abcdefg1234"
+
+release-backend:
+  environment: production
+  vcs_project: mimixiche-backend
+  branch: release
+  jenkins_project: "production-backend-release"
+  jenkins_token: "abcdefg1234"

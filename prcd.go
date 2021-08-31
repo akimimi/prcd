@@ -87,11 +87,10 @@ func createGinEngine() *gin.Engine {
 }
 
 func onNotify(c *gin.Context) {
-	logs.Debug("receive post")
 	errorCode, errorMessage := 0, "ok"
 	var e error
 	if b, err := c.GetRawData(); err == nil {
-		logs.Debug(string(b))
+		logs.Debug("receive post:", string(b))
 		basicHook := BasicHook{}
 		if err := json.Unmarshal(b, &basicHook); err == nil {
 			go sendNotice(basicHook, b)
@@ -111,9 +110,12 @@ func onNotify(c *gin.Context) {
 
 func sendNotice(basicHook BasicHook, bytes []byte) {
 	agent := createHookAgentByName(basicHook.HookName)
+	logs.Debug("match agent:", agent.Name())
 	if e := agent.Parse(bytes); e == nil {
 		if agent.CanTriggerEvent() {
+			logs.Debug("agent", agent.Name(), "can trigger")
 			notifier := createNotifierByAgent(agent)
+			logs.Debug("notifier project (", notifier.JenkinsProject.Name, ":", notifier.JenkinsProject.Token, ")")
 			if err := notifier.Notify(); err != nil {
 				logs.Error(err)
 			}

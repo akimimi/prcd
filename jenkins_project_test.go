@@ -33,6 +33,17 @@ func TestJenkinsProjectConfigParsing(t *testing.T) {
 		jenkinsProjectConfigGrp["release-backend"].JenkinsToken != "abcdefg1234" {
 		t.Error("Jenkins config dev-backend parse failed!")
 	}
+	if jenkinsProjectConfigGrp["dev-backend-dependent"].Environment != "debug" ||
+		jenkinsProjectConfigGrp["dev-backend-dependent"].VcsProject != "mimixiche-backend" ||
+		jenkinsProjectConfigGrp["dev-backend-dependent"].Branch != "develop" ||
+		jenkinsProjectConfigGrp["dev-backend-dependent"].JenkinsProject != "dev-jenkins-project" ||
+		jenkinsProjectConfigGrp["dev-backend-dependent"].JenkinsToken != "abcdefg1234" ||
+		jenkinsProjectConfigGrp["dev-backend-dependent"].JenkinsHost != "http://project-jenkins.com" ||
+		jenkinsProjectConfigGrp["dev-backend-dependent"].JenkinsUrl != "/<project>/notify?token=<token>" ||
+		jenkinsProjectConfigGrp["dev-backend-dependent"].JenkinsUsername != "akimimi" ||
+		jenkinsProjectConfigGrp["dev-backend-dependent"].JenkinsUserApiToken != "akimimi" {
+		t.Error("Jenkins config dev-backend-dependent parse failed!")
+	}
 }
 
 func TestMatchJenkinsProject(t *testing.T) {

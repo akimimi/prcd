@@ -18,3 +18,14 @@ release-backend:
   branch: release
   jenkins_project: "production-backend-release"
   jenkins_token: "abcdefg1234"
+
+dev-backend-dependent:
+  environment: debug
+  vcs_project: mimixiche-backend
+  branch: develop
+  jenkins_project: "dev-jenkins-project"
+  jenkins_token: "abcdefg1234"
+  jenkins_host: "http://project-jenkins.com"
+  jenkins_url: "/<project>/notify?token=<token>"
+  jenkins_username: "akimimi"
+  jenkins_user_api_token: "akimimi"

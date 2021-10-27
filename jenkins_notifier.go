@@ -27,18 +27,33 @@ func (notifier *JenkinsNotifier) Notify() error {
 	if err != nil {
 		return err
 	}
-	req.SetBasicAuth(notifier.UserName, notifier.UserApiToken)
+	username, apiToken := notifier.UserName, notifier.UserApiToken
+	if notifier.JenkinsProject.HasJenkinsConfig() {
+		username, apiToken = notifier.JenkinsProject.Username, notifier.JenkinsProject.UserApiToken
+	}
+	req.SetBasicAuth(username, apiToken)
 	resp, err := http.DefaultClient.Do(req)
-	if err == nil {
+	if err == nil && resp.StatusCode == http.StatusOK {
 		defer resp.Body.Close()
 		logs.Info("Notified to project ", notifier.JenkinsProject.Name)
 		return nil
+	} else {
+		if err == nil {
+			return errors.New("Notify Status is " + resp.Status)
+		} else {
+			return err
+		}
 	}
-	return err
 }
 
 func (notifier *JenkinsNotifier) notifyUrl() string {
-	url := strings.Replace(notifier.JenkinsUrl, "<project>", notifier.JenkinsProject.Name, 1)
+	host := notifier.JenkinsHost
+	url := notifier.JenkinsUrl
+	if notifier.JenkinsProject.HasJenkinsConfig() {
+		host = notifier.JenkinsProject.Host
+		url = notifier.JenkinsProject.Url
+	}
+	url = strings.Replace(url, "<project>", notifier.JenkinsProject.Name, 1)
 	url = strings.Replace(url, "<token>", notifier.JenkinsProject.Token, 1)
-	return notifier.JenkinsHost + url
+	return host + url
 }

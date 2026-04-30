@@ -55,7 +55,7 @@ func TestJenkinsNotifier_NotifyUrl_WithInvalidProjectConfig(t *testing.T) {
 		UserName:     "",
 		UserApiToken: "",
 	}
-	expected := "http://notify.website.com/pro/notify?token=abcd1234"
+	expected := "http://notify.invalid/pro/notify?token=abcd1234"
 	if notifier.notifyUrl() != expected {
 		t.Errorf("Notify url error, expected %s, actual %s", expected, notifier.notifyUrl())
 	}
@@ -63,7 +63,7 @@ func TestJenkinsNotifier_NotifyUrl_WithInvalidProjectConfig(t *testing.T) {
 
 func TestJenkinsNotifier_Notify(t *testing.T) {
 	notifier := JenkinsNotifier{
-		JenkinsHost:    "http://notify.website.com",
+		JenkinsHost:    "http://notify.invalid",
 		JenkinsUrl:     "/<project>/notify?token=<token>",
 		JenkinsProject: JenkinsProject{},
 		UserName:       "",
@@ -73,7 +73,9 @@ func TestJenkinsNotifier_Notify(t *testing.T) {
 		t.Error("Notify should failed.")
 	}
 
-	notifier.JenkinsHost = "http://notify.website.com"
+	// 127.0.0.1:1 上不会有监听，必然 connection refused，
+	// 比依赖某个域名解析失败更稳定（避免 DNS 劫持 / 透明代理影响）。
+	notifier.JenkinsHost = "http://127.0.0.1:1"
 	notifier.JenkinsProject = JenkinsProject{
 		Name:  "pro",
 		Token: "abcd1234",

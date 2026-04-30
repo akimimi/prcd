@@ -1,14 +1,18 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/gogap/logs"
 	"io"
 	"os"
+	"sync"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gogap/logs"
 )
 
 // Error codes for where the working flow stops.
@@ -42,6 +46,38 @@ var settings struct {
 	jenkinsProjectConfigFile string
 	notifyUrl                string
 	verbose                  bool
+	dedupWindowSeconds       int64
+}
+
+var (
+	dedupCache   = make(map[string]time.Time)
+	dedupCacheMu sync.Mutex
+)
+
+// isDuplicateMessage 判断该原始消息是否在 dedupWindowSeconds 秒内出现过。
+// 同时顺手清理过期条目，避免 map 无限增长。
+func isDuplicateMessage(b []byte) bool {
+	if settings.dedupWindowSeconds <= 0 {
+		return false
+	}
+	sum := sha256.Sum256(b)
+	key := hex.EncodeToString(sum[:])
+	window := time.Duration(settings.dedupWindowSeconds) * time.Second
+	now := time.Now()
+
+	dedupCacheMu.Lock()
+	defer dedupCacheMu.Unlock()
+
+	for k, t := range dedupCache {
+		if now.Sub(t) > window {
+			delete(dedupCache, k)
+		}
+	}
+	if t, ok := dedupCache[key]; ok && now.Sub(t) <= window {
+		return true
+	}
+	dedupCache[key] = now
+	return false
 }
 
 func loadParameters() {
@@ -58,6 +94,7 @@ func loadParameters() {
 	flag.StringVar(&settings.jenkinsUserApiToken, "jenkins-api-token", "", "Jenkins User API Token.")
 	flag.StringVar(&settings.jenkinsProjectConfigFile, "jenkins-project-config-file", "/etc/prcd/projects.yaml", "Jenkins Project config file.")
 	flag.StringVar(&settings.notifyUrl, "notify-url", "/notify", "Listening url address.")
+	flag.Int64Var(&settings.dedupWindowSeconds, "dedup-window-seconds", 10, "Drop identical webhook payloads received within this many seconds (0 disables).")
 	flag.Parse()
 	logs.SetFileLogger(settings.hookMessageLogFile)
 	if !settings.verbose {
@@ -91,6 +128,11 @@ func onNotify(c *gin.Context) {
 	var e error
 	if b, err := c.GetRawData(); err == nil {
 		logs.Debug("receive post:", string(b))
+		if isDuplicateMessage(b) {
+			logs.Debug("duplicate webhook payload dropped (within", settings.dedupWindowSeconds, "seconds)")
+			c.JSON(200, gin.H{"errcode": 0, "errmsg": "duplicate dropped"})
+			return
+		}
 		basicHook := BasicHook{}
 		if err := json.Unmarshal(b, &basicHook); err == nil {
 			go sendNotice(basicHook, b)

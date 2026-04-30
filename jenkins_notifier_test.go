@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+)
 
 func TestJenkinsNotifier_NotifyUrl(t *testing.T) {
 	notifier := JenkinsNotifier{
@@ -55,7 +59,9 @@ func TestJenkinsNotifier_NotifyUrl_WithInvalidProjectConfig(t *testing.T) {
 		UserName:     "",
 		UserApiToken: "",
 	}
-	expected := "http://notify.invalid/pro/notify?token=abcd1234"
+	// project 自身的 username/apiToken 缺失 → HasJenkinsConfig() 为 false，
+	// notifyUrl() 回退到全局 host/url 拼接。
+	expected := "http://notify.website.com/pro/notify?token=abcd1234"
 	if notifier.notifyUrl() != expected {
 		t.Errorf("Notify url error, expected %s, actual %s", expected, notifier.notifyUrl())
 	}
@@ -90,7 +96,12 @@ func TestJenkinsNotifier_Notify(t *testing.T) {
 		t.Error("Notify should failed.")
 	}
 
-	notifier.JenkinsHost = "https://www.mimixiche.com"
+	// happy-path 用本地 httptest 服务，避免依赖外网域名 / TLS 握手稳定性。
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer ts.Close()
+	notifier.JenkinsHost = ts.URL
 	notifier.JenkinsUrl = "/<project>/notify?token=<token>"
 	if err := notifier.Notify(); err != nil {
 		t.Errorf("Notify failed with %s", err)

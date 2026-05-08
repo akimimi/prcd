@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/gogap/errors"
 	"github.com/gogap/logs"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -33,17 +34,25 @@ func (notifier *JenkinsNotifier) Notify() error {
 	}
 	req.SetBasicAuth(username, apiToken)
 	resp, err := http.DefaultClient.Do(req)
-	if err == nil && resp.StatusCode == http.StatusOK {
-		defer resp.Body.Close()
-		logs.Info("Notified to project ", notifier.JenkinsProject.Name)
-		return nil
-	} else {
-		if err == nil {
-			return errors.New("Notify Status is " + resp.Status)
-		} else {
-			return err
-		}
+	if err != nil {
+		return err
 	}
+	defer resp.Body.Close()
+
+	// 读取一小段响应体用于诊断（Jenkins 触发成功一般是 201 Created + Location: /queue/item/...）。
+	bodyBytes, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+	bodySnippet := strings.TrimSpace(string(bodyBytes))
+	location := resp.Header.Get("Location")
+
+	// Jenkins 触发构建一般返回 201 Created（带 Location 指向 queue item），
+	// 老的判定只接受 200 OK，会把 201 当成失败、把任意 200 页面当成成功，这里改为接受所有 2xx。
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		logs.Info("Notified to project ", notifier.JenkinsProject.Name,
+			" status=", resp.Status, " location=", location, " body=", bodySnippet)
+		return nil
+	}
+	return errors.New("Notify failed: project=" + notifier.JenkinsProject.Name +
+		" status=" + resp.Status + " body=" + bodySnippet)
 }
 
 func (notifier *JenkinsNotifier) notifyUrl() string {

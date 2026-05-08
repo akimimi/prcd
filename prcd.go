@@ -129,12 +129,15 @@ func onNotify(c *gin.Context) {
 	if b, err := c.GetRawData(); err == nil {
 		logs.Debug("receive post:", string(b))
 		if isDuplicateMessage(b) {
-			logs.Debug("duplicate webhook payload dropped (within", settings.dedupWindowSeconds, "seconds)")
+			// 提到 Info 级，让默认日志也能看到去重命中。
+			logs.Info("duplicate webhook payload dropped (within ",
+				settings.dedupWindowSeconds, " seconds)")
 			c.JSON(200, gin.H{"errcode": 0, "errmsg": "duplicate dropped"})
 			return
 		}
 		basicHook := BasicHook{}
 		if err := json.Unmarshal(b, &basicHook); err == nil {
+			logs.Info("received hook hook_name=", basicHook.HookName, " hook_id=", basicHook.HookId)
 			go sendNotice(basicHook, b)
 		} else {
 			e, errorCode = err, ErrorInParsing
@@ -154,10 +157,20 @@ func sendNotice(basicHook BasicHook, bytes []byte) {
 	agent := createHookAgentByName(basicHook.HookName)
 	logs.Debug("match agent:", agent.Name())
 	if e := agent.Parse(bytes); e == nil {
-		if agent.CanTriggerEvent() {
-			logs.Debug("agent", agent.Name(), "can trigger")
+		project, branch, env := agent.HookProject(), agent.HookBranch(), agent.Environment()
+		canTrigger := agent.CanTriggerEvent()
+		logs.Info("hook parsed agent=", agent.Name(),
+			" project=", project, " branch=", branch, " environment=", env,
+			" can_trigger=", canTrigger)
+		if canTrigger {
 			notifier := createNotifierByAgent(agent)
-			logs.Debug("notifier project (", notifier.JenkinsProject.Name, ":", notifier.JenkinsProject.Token, ")")
+			if notifier.JenkinsProject.Name == "" || notifier.JenkinsProject.Token == "" {
+				logs.Info("no jenkins project matched for environment=", env,
+					" project=", project, " branch=", branch, ", skip notify")
+				return
+			}
+			logs.Info("matched jenkins project=", notifier.JenkinsProject.Name,
+				" host=", notifier.JenkinsProject.Host)
 			if err := notifier.Notify(); err != nil {
 				logs.Error(err)
 			}
